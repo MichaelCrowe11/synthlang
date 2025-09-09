@@ -1,0 +1,21 @@
+// SYNTH Hello World - Basic language features
+// This demonstrates fundamental SYNTH syntax and AI operations
+
+function main() {
+    // Basic variable declarations
+    let message = "Hello, SYNTH World!";
+    let version = 1.0;
+    
+    // AI-enhanced greeting generation
+    let ai_greeting = ai.generate("Generate a friendly greeting for a new programming language called SYNTH");
+    
+    // Semantic similarity comparison
+    let similarity = message ~~ ai_greeting;
+    
+    // Output results
+    console.log(message);
+    console.log(ai_greeting);
+    console.log("Similarity:", similarity);
+    
+    return 0;
+}

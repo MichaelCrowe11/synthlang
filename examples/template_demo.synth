@@ -1,0 +1,138 @@
+// SYNTH Template System Demo (Liquid++ Evolution)
+// Shows AI-enhanced templating with semantic operations
+
+template UserProfile {
+    render(user: object) {
+        <div class="user-profile">
+            <h1>{user.name}</h1>
+            <p class="bio">{ai.enhance_text(user.bio)}</p>
+            
+            // AI-generated personalized greeting
+            <div class="greeting">
+                {ai.generate("Generate a personalized greeting for " + user.name + " who likes " + user.interests)}
+            </div>
+            
+            // Semantic matching for similar users
+            <div class="similar-users">
+                <h3>People you might know:</h3>
+                {for similar_user in users where user.interests ~~ similar_user.interests > 0.7}
+                    <div class="user-card">
+                        <span>{similar_user.name}</span>
+                        <small>Similarity: {(user.interests ~~ similar_user.interests) * 100}%</small>
+                    </div>
+                {/for}
+            </div>
+            
+            // Dynamic content based on semantic analysis
+            <div class="recommendations">
+                <h3>Recommended for you:</h3>
+                {let user_vector = embed(user.interests + " " + user.bio)}
+                {for item in content_items where item.vector ~~ user_vector > 0.6}
+                    <div class="recommendation">
+                        <h4>{item.title}</h4>
+                        <p>{item.description}</p>
+                        <small>Match: {(item.vector ~~ user_vector) * 100}%</small>
+                    </div>
+                {/for}
+            </div>
+        </div>
+    }
+}
+
+template ProductCard {
+    render(product: object) {
+        <div class="product-card" data-id="{product.id}">
+            <img src="{product.image}" alt="{product.name}" />
+            
+            <div class="product-info">
+                <h3>{product.name}</h3>
+                
+                // AI-enhanced product description
+                <p class="description">
+                    {ai.improve_description(product.description, product.category)}
+                </p>
+                
+                <div class="price">${product.price}</div>
+                
+                // Semantic product matching
+                <div class="related-products">
+                    <h4>You might also like:</h4>
+                    {for related in products where related.id != product.id && related.description ~~ product.description > 0.8}
+                        <a href="/product/{related.id}" class="related-link">
+                            {related.name}
+                        </a>
+                    {/for}
+                </div>
+                
+                // AI-generated buying advice
+                <div class="ai-advice">
+                    <strong>AI Recommendation:</strong>
+                    {ai.generate("Give buying advice for " + product.name + " considering: " + product.features)}
+                </div>
+            </div>
+        </div>
+    }
+}
+
+// Template usage function
+function render_user_page(user_data: object) -> string {
+    // Preprocess user data with AI
+    let enhanced_user = {
+        name: user_data.name,
+        bio: user_data.bio,
+        interests: user_data.interests,
+        ai_insights: ai.generate("Generate 3 insights about a user with interests: " + user_data.interests)
+    };
+    
+    // Render template
+    return UserProfile.render(enhanced_user);
+}
+
+function render_product_page(product_data: object) -> string {
+    // AI-enhance product features
+    let enhanced_product = {
+        id: product_data.id,
+        name: product_data.name,
+        description: product_data.description,
+        price: product_data.price,
+        image: product_data.image,
+        category: product_data.category,
+        features: product_data.features,
+        ai_summary: ai.generate("Summarize the key benefits of " + product_data.name + ": " + product_data.features)
+    };
+    
+    return ProductCard.render(enhanced_product);
+}
+
+function main() {
+    // Sample user data
+    let user = {
+        name: "Alice Johnson",
+        bio: "Software engineer passionate about AI and machine learning. Loves hiking and photography.",
+        interests: "artificial intelligence, programming, photography, nature, hiking"
+    };
+    
+    // Sample product data
+    let product = {
+        id: "laptop-001",
+        name: "AI Developer Laptop",
+        description: "High-performance laptop designed for machine learning development",
+        price: 2499,
+        image: "/images/laptop.jpg",
+        category: "computers",
+        features: "NVIDIA RTX 4080, 32GB RAM, 1TB SSD, Linux support"
+    };
+    
+    // Render templates
+    let user_html = render_user_page(user);
+    let product_html = render_product_page(product);
+    
+    console.log("=== User Profile HTML ===");
+    console.log(user_html);
+    console.log("");
+    
+    console.log("=== Product Card HTML ===");
+    console.log(product_html);
+    
+    return 0;
+}

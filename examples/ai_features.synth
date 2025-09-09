@@ -1,0 +1,63 @@
+// SYNTH AI Features Demo
+// Showcases AI-native operations and semantic computing
+
+function analyze_text(text: string) -> uncertain<string> {
+    // Generate embeddings for semantic analysis
+    let text_embedding = embed(text);
+    
+    // Compare with known patterns
+    let positive_pattern = embed("happy positive good excellent");
+    let negative_pattern = embed("sad negative bad terrible");
+    
+    // Calculate semantic similarities
+    let positive_score = text_embedding ~~ positive_pattern;
+    let negative_score = text_embedding ~~ negative_pattern;
+    
+    // Determine sentiment with uncertainty
+    if positive_score > negative_score {
+        return "positive" @ positive_score;
+    } else {
+        return "negative" @ negative_score;
+    }
+}
+
+function generate_summary(documents: [string]) -> string {
+    // Process multiple documents
+    let combined_content = "";
+    for doc in documents {
+        combined_content = combined_content + " " + doc;
+    }
+    
+    // AI-powered summarization
+    let summary = ai.generate("Summarize this content in one paragraph: " + combined_content);
+    
+    return summary;
+}
+
+function main() {
+    // Test sentiment analysis
+    let test_texts = [
+        "I love this new programming language!",
+        "This is terrible and confusing.",
+        "SYNTH seems interesting but complex."
+    ];
+    
+    for text in test_texts {
+        let sentiment = analyze_text(text);
+        console.log("Text:", text);
+        console.log("Sentiment:", sentiment);
+        console.log("---");
+    }
+    
+    // Test document summarization
+    let documents = [
+        "SYNTH is a new programming language designed for AI applications.",
+        "It features native support for embeddings and semantic operations.",
+        "The language can compile to multiple targets including WebAssembly."
+    ];
+    
+    let summary = generate_summary(documents);
+    console.log("Summary:", summary);
+    
+    return 0;
+}

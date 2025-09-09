@@ -1,0 +1,70 @@
+[package]
+name = "synth-lang"
+version = "0.1.0"
+edition = "2021"
+authors = ["SYNTH Language Team <team@synthlang.org>"]
+license = "Apache-2.0"
+description = "SYNTH: The Universal Synthesis Language - AI-native, cross-domain programming"
+homepage = "https://synthlang.org"
+repository = "https://github.com/synth-lang/synth"
+documentation = "https://docs.synthlang.org"
+keywords = ["programming-language", "compiler", "ai", "quantum", "cross-domain"]
+categories = ["compilers", "development-tools", "science"]
+
+[workspace]
+members = [
+    "compiler",
+    "runtime", 
+    "stdlib",
+    "ai-engine",
+    "semantic",
+    "quantum",
+    "tools/cli",
+    "tools/lsp",
+    "tools/formatter"
+]
+
+[dependencies]
+# Core dependencies for main binary
+clap = { version = "4.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Language-specific dependencies
+synth-compiler = { path = "compiler" }
+synth-runtime = { path = "runtime" }
+synth-stdlib = { path = "stdlib" }
+
+[dev-dependencies]
+tempdir = "0.3"
+assert_cmd = "2.0"
+predicates = "3.0"
+
+[features]
+default = ["ai-engine", "quantum", "semantic"]
+full = ["ai-engine", "quantum", "semantic", "polyglot", "zkp"]
+ai-engine = ["synth-compiler/ai", "synth-runtime/ai"]
+quantum = ["synth-compiler/quantum", "synth-runtime/quantum"]
+semantic = ["synth-compiler/semantic", "synth-runtime/semantic"]
+polyglot = ["synth-runtime/python", "synth-runtime/javascript", "synth-runtime/rust"]
+zkp = ["synth-compiler/zkp", "synth-runtime/zkp"]
+wasm-target = ["synth-compiler/wasm"]
+embedded-target = ["synth-compiler/embedded"]
+
+[[bin]]
+name = "synth"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+debug = true
+opt-level = 0

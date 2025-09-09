@@ -1,0 +1,35 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+*.pdb
+
+# IDE directories
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+
+# Generated documentation
+/target/doc/
+
+# Build outputs
+*.js
+*.wasm
+/dist/
+/build/
+
+# Node modules
+node_modules/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
