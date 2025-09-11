@@ -1,0 +1,61 @@
+// Example 1: Hello AI - Basic AI model interaction with typed schemas
+
+import synth.ai.*;
+import synth.io.*;
+
+// Define typed schemas for model I/O
+schema UserQuery {
+    text: String,
+    context: Option<String>,
+    max_tokens: u32 = 150,
+}
+
+schema AIResponse {
+    answer: String,
+    confidence: f32,
+    sources: [String],
+}
+
+// Load a model with resource tracking (linear type ensures proper cleanup)
+@effects(IO)
+fn load_assistant() -> Model<UserQuery, AIResponse> {
+    let model = load_model("openai:gpt-4") ![IO];
+    return model;
+}
+
+// Typed prompt template with compile-time validation
+prompt AnswerQuestion<T>(question: T, context: String) -> Prompt<UserQuery> {
+    template """
+    Context: {{context}}
+    
+    Question: {{question}}
+    
+    Please provide a comprehensive answer with sources.
+    """
+}
+
+// Main inference function with effect tracking
+@effects(IO, Random)
+fn main() ![IO] {
+    // Model is a linear resource - must be used exactly once
+    let assistant = load_assistant();
+    
+    let query = UserQuery {
+        text: "What is the capital of France?",
+        context: Some("We're discussing European geography"),
+        max_tokens: 100,
+    };
+    
+    // Inference with deterministic logging for reproducibility
+    let response = infer(assistant, query) ![IO] with {
+        seed: 42,
+        temperature: 0.7,
+        trace: true,  // Enable deterministic logging
+    };
+    
+    // Type-safe access to response fields
+    println("Answer: {}", response.answer);
+    println("Confidence: {:.2}%", response.confidence * 100.0);
+    
+    // Resource automatically cleaned up (linear type system)
+}

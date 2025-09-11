@@ -1,0 +1,237 @@
+{
+    "Pipeline Template": {
+        "prefix": "pipeline",
+        "body": [
+            "pipeline ${1:PipelineName} {",
+            "    // Define nodes",
+            "    model ${2:classifier} {",
+            "        provider: \"${3:openai}\"",
+            "        model: \"${4:gpt-3.5-turbo}\"",
+            "        temperature: ${5:0.7}",
+            "        max_tokens: ${6:1000}",
+            "    }",
+            "",
+            "    prompt ${7:template} {",
+            "        template: \"\"\"",
+            "        ${8:Your prompt template here}",
+            "        Input: {{input}}",
+            "        \"\"\"",
+            "    }",
+            "",
+            "    // Define flow",
+            "    edges: [",
+            "        input -> ${7:template} -> ${2:classifier} -> output",
+            "    ]",
+            "",
+            "    config: {",
+            "        max_parallel: ${9:10},",
+            "        timeout_ms: ${10:30000},",
+            "        cache_enabled: ${11:true}",
+            "    }",
+            "}"
+        ],
+        "description": "Create a new SynthLang pipeline"
+    },
+    "Model Node": {
+        "prefix": "model",
+        "body": [
+            "model ${1:model_name} {",
+            "    provider: \"${2:openai}\"",
+            "    model: \"${3:gpt-3.5-turbo}\"",
+            "    temperature: ${4:0.7}",
+            "    max_tokens: ${5:1000}",
+            "    ${6:// Additional config}",
+            "}"
+        ],
+        "description": "Create a model node"
+    },
+    "Prompt Template": {
+        "prefix": "prompt",
+        "body": [
+            "prompt ${1:prompt_name} {",
+            "    template: \"\"\"",
+            "    ${2:Your prompt template here}",
+            "    Input: {{${3:input_variable}}}",
+            "    \"\"\"",
+            "}"
+        ],
+        "description": "Create a prompt template"
+    },
+    "Router Node": {
+        "prefix": "router",
+        "body": [
+            "router ${1:router_name} {",
+            "    strategy: ${2|conditional,round_robin,ab_split|}",
+            "    routes: [",
+            "        {condition: \"${3:condition}\", target: ${4:target_node}},",
+            "        {default: ${5:default_node}}",
+            "    ]",
+            "}"
+        ],
+        "description": "Create a router node for conditional routing"
+    },
+    "A/B Test Router": {
+        "prefix": "ab_router",
+        "body": [
+            "router ${1:ab_test} {",
+            "    strategy: ab_split(${2:0.5})",
+            "    routes: [",
+            "        {name: \"${3:variant_a}\", target: ${4:model_a}},",
+            "        {name: \"${5:variant_b}\", target: ${6:model_b}}",
+            "    ]",
+            "}"
+        ],
+        "description": "Create an A/B testing router"
+    },
+    "Guardrail Node": {
+        "prefix": "guardrail",
+        "body": [
+            "guardrail ${1:safety_checks} {",
+            "    pii_detection: ${2:true}",
+            "    toxicity_threshold: ${3:0.1}",
+            "    bias_categories: [\"${4:gender}\", \"${5:race}\", \"${6:religion}\"]",
+            "    blocked_terms: [\"${7:term1}\", \"${8:term2}\"]",
+            "}"
+        ],
+        "description": "Create a guardrail for safety checks"
+    },
+    "Cache Node": {
+        "prefix": "cache",
+        "body": [
+            "cache ${1:response_cache} {",
+            "    ttl: ${2:3600}  // seconds",
+            "    max_size: ${3:10000}",
+            "    key_strategy: ${4|exact_match,semantic_similarity|}",
+            "    ${5:threshold: 0.95  // for semantic similarity}",
+            "}"
+        ],
+        "description": "Create a cache node"
+    },
+    "Evaluator Node": {
+        "prefix": "evaluator",
+        "body": [
+            "evaluator ${1:quality_metrics} {",
+            "    metrics: [",
+            "        ${2|accuracy,relevance,coherence,helpfulness,safety|}(weight: ${3:0.3}),",
+            "        ${4|bleu,rouge,semantic_similarity|}(weight: ${5:0.3})",
+            "    ]",
+            "    baseline: \"${6:gpt-3.5-turbo}\"",
+            "    sample_rate: ${7:0.1}",
+            "}"
+        ],
+        "description": "Create an evaluator node"
+    },
+    "Evaluation Harness": {
+        "prefix": "eval",
+        "body": [
+            "eval ${1:EvaluationName} {",
+            "    dataset: \"${2:dataset_name}\"",
+            "    ",
+            "    test_cases: [",
+            "        {",
+            "            input: \"${3:test input}\",",
+            "            expected_${4|intent,output|}: \"${5:expected value}\",",
+            "            min_quality_score: ${6:0.8}",
+            "        }",
+            "    ]",
+            "    ",
+            "    metrics: {",
+            "        ${7|intent_accuracy,response_quality,latency_p95,cost_per_request|}: ${8:true}",
+            "    }",
+            "    ",
+            "    comparison: {",
+            "        baseline: \"${9:baseline_model}\",",
+            "        candidates: [\"${10:CandidatePipeline}\"],",
+            "        statistical_significance: ${11:0.95}",
+            "    }",
+            "}"
+        ],
+        "description": "Create an evaluation harness"
+    },
+    "Deployment Config": {
+        "prefix": "deploy",
+        "body": [
+            "deploy ${1:DeploymentName} {",
+            "    pipeline: ${2:PipelineName}",
+            "    ",
+            "    environments: {",
+            "        ${3|dev,staging,production|}: {",
+            "            replicas: ${4:1},",
+            "            cache: \"${5:redis://localhost:6379}\",",
+            "            monitoring: \"${6:datadog}\"",
+            "        }",
+            "    }",
+            "    ",
+            "    observability: {",
+            "        logs: \"${7:elasticsearch}\",",
+            "        metrics: \"${8:prometheus}\",",
+            "        traces: \"${9:jaeger}\",",
+            "        alerts: [",
+            "            {metric: \"error_rate\", threshold: ${10:0.01}, action: \"${11:page}\"}",
+            "        ]",
+            "    }",
+            "}"
+        ],
+        "description": "Create a deployment configuration"
+    },
+    "Multi-stage Pipeline": {
+        "prefix": "multi_pipeline",
+        "body": [
+            "pipeline ${1:MultiStagePipeline} {",
+            "    // Stage 1: Classification",
+            "    model ${2:classifier} {",
+            "        provider: \"openai\"",
+            "        model: \"gpt-3.5-turbo\"",
+            "        temperature: 0.3",
+            "    }",
+            "    ",
+            "    // Stage 2: Routing",
+            "    router ${3:intent_router} {",
+            "        strategy: conditional",
+            "        routes: [",
+            "            {condition: \"intent == 'technical'\", target: ${4:technical_model}},",
+            "            {condition: \"intent == 'billing'\", target: ${5:billing_model}},",
+            "            {default: ${6:general_model}}",
+            "        ]",
+            "    }",
+            "    ",
+            "    // Specialized models",
+            "    model ${4:technical_model} {",
+            "        provider: \"openai\"",
+            "        model: \"gpt-4\"",
+            "        temperature: 0.5",
+            "    }",
+            "    ",
+            "    model ${5:billing_model} {",
+            "        provider: \"anthropic\"",
+            "        model: \"claude-2\"",
+            "        temperature: 0.3",
+            "    }",
+            "    ",
+            "    model ${6:general_model} {",
+            "        provider: \"openai\"",
+            "        model: \"gpt-3.5-turbo\"",
+            "        temperature: 0.7",
+            "    }",
+            "    ",
+            "    // Safety and caching",
+            "    guardrail safety {",
+            "        toxicity_threshold: 0.1",
+            "        pii_detection: true",
+            "    }",
+            "    ",
+            "    cache responses {",
+            "        ttl: 3600",
+            "        max_size: 5000",
+            "    }",
+            "    ",
+            "    edges: [",
+            "        input -> ${2:classifier} -> ${3:intent_router},",
+            "        ${3:intent_router} -> [${4:technical_model}, ${5:billing_model}, ${6:general_model}],",
+            "        all_models -> safety -> responses -> output",
+            "    ]",
+            "}"
+        ],
+        "description": "Create a multi-stage pipeline with routing and safety"
+    }
+}

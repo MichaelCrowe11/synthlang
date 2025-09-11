@@ -1,0 +1,221 @@
+// SynthLang Example: Multi-stage LLM Pipeline with Evaluation
+
+pipeline CustomerSupportBot {
+    // Stage 1: Intent Classification
+    prompt classify_intent {
+        template: """
+        Classify the customer intent:
+        Input: {{user_message}}
+        
+        Categories: technical_support, billing, general_inquiry, complaint
+        Output format: {"category": "...", "confidence": 0.0-1.0}
+        """
+    }
+    
+    model intent_classifier {
+        provider: "openai"
+        model: "gpt-3.5-turbo"
+        temperature: 0.3
+        max_tokens: 50
+    }
+    
+    // Stage 2: Router based on intent
+    router intent_router {
+        strategy: conditional
+        routes: [
+            {condition: "category == 'technical_support'", target: technical_flow},
+            {condition: "category == 'billing'", target: billing_flow},
+            {condition: "category == 'complaint'", target: escalation_flow},
+            {default: general_flow}
+        ]
+    }
+    
+    // Technical support flow with A/B testing
+    flow technical_flow {
+        router ab_test {
+            strategy: ab_split(0.5)
+            routes: [
+                {name: "gpt4", target: gpt4_technical},
+                {name: "claude", target: claude_technical}
+            ]
+        }
+        
+        model gpt4_technical {
+            provider: "openai"
+            model: "gpt-4"
+            temperature: 0.5
+            prompt: technical_prompt
+        }
+        
+        model claude_technical {
+            provider: "anthropic"
+            model: "claude-2"
+            temperature: 0.5
+            prompt: technical_prompt
+        }
+        
+        prompt technical_prompt {
+            template: """
+            You are a technical support specialist.
+            Customer issue: {{user_message}}
+            Intent analysis: {{intent_analysis}}
+            
+            Provide a helpful, accurate technical response.
+            """
+        }
+    }
+    
+    // Guardrails for all responses
+    guardrail safety_checks {
+        pii_detection: true
+        toxicity_threshold: 0.1
+        bias_categories: ["gender", "race", "religion"]
+        blocked_terms: ["password", "credit_card", "ssn"]
+    }
+    
+    // Response caching
+    cache response_cache {
+        ttl: 3600  // 1 hour
+        max_size: 10000
+        key_strategy: semantic_similarity(threshold: 0.95)
+    }
+    
+    // Evaluation metrics
+    evaluator quality_metrics {
+        metrics: [
+            coherence(weight: 0.3),
+            relevance(weight: 0.3),
+            helpfulness(weight: 0.2),
+            safety(weight: 0.2)
+        ]
+        
+        baseline: "gpt-3.5-turbo"
+        sample_rate: 0.1  // Evaluate 10% of responses
+    }
+    
+    // Cost optimization
+    optimizer cost_optimizer {
+        budget_per_day: 100.0
+        fallback_model: "gpt-3.5-turbo"
+        strategies: [
+            cache_first,
+            route_by_complexity,
+            batch_similar_requests
+        ]
+    }
+    
+    // Flow definition
+    edges: [
+        user_input -> classify_intent -> intent_classifier -> intent_router,
+        intent_router -> [technical_flow, billing_flow, general_flow, escalation_flow],
+        all_flows -> safety_checks -> response_cache -> output
+    ]
+    
+    config: {
+        max_parallel: 20,
+        timeout_ms: 15000,
+        trace_enabled: true,
+        cost_tracking: true
+    }
+}
+
+// Evaluation harness
+eval CustomerSupportEval {
+    dataset: "customer_support_test_v1"
+    
+    test_cases: [
+        {
+            input: "My internet is down",
+            expected_intent: "technical_support",
+            min_quality_score: 0.8
+        },
+        {
+            input: "I was charged twice",
+            expected_intent: "billing",
+            min_quality_score: 0.85
+        }
+    ]
+    
+    metrics: {
+        intent_accuracy: true,
+        response_quality: true,
+        latency_p95: 2000,  // ms
+        cost_per_request: 0.05  // USD
+    }
+    
+    comparison: {
+        baseline: "gpt-3.5-turbo-only",
+        candidates: ["CustomerSupportBot"],
+        statistical_significance: 0.95
+    }
+}
+
+// Deployment configuration
+deploy CustomerSupportDeployment {
+    pipeline: CustomerSupportBot
+    
+    environments: {
+        dev: {
+            replicas: 1,
+            cache: "redis://localhost:6379",
+            monitoring: "datadog"
+        },
+        staging: {
+            replicas: 2,
+            cache: "redis://staging.cache:6379",
+            monitoring: "datadog",
+            canary: {
+                enabled: true,
+                traffic_percentage: 10,
+                success_rate_threshold: 0.95
+            }
+        },
+        production: {
+            replicas: 10,
+            cache: "redis://prod.cache:6379",
+            monitoring: "datadog",
+            auto_scaling: {
+                min: 5,
+                max: 50,
+                target_latency_ms: 1000
+            }
+        }
+    }
+    
+    observability: {
+        logs: "elasticsearch",
+        metrics: "prometheus",
+        traces: "jaeger",
+        alerts: [
+            {metric: "error_rate", threshold: 0.01, action: "page"},
+            {metric: "p99_latency", threshold: 5000, action: "alert"},
+            {metric: "daily_cost", threshold: 150, action: "notify"}
+        ]
+    }
+}
+
+// Usage example
+async fn main() {
+    // Initialize pipeline
+    let pipeline = CustomerSupportBot::new()
+        .with_cache("redis://localhost:6379")
+        .with_monitoring("datadog");
+    
+    // Process request
+    let response = pipeline.execute({
+        user_message: "I can't login to my account",
+        user_id: "user_123",
+        session_id: "session_456"
+    });
+    
+    // Get metrics
+    let metrics = pipeline.metrics();
+    println("Latency: {}ms", metrics.latency_p50);
+    println("Cost: ${}", metrics.total_cost);
+    println("Cache hit rate: {}%", metrics.cache_hit_rate * 100);
+    
+    // Run evaluation
+    let eval_results = CustomerSupportEval::run(pipeline);
+    println("Intent accuracy: {}%", eval_results.intent_accuracy * 100);
+    println("Quality score: {}", eval_results.avg_quality_score);
+}

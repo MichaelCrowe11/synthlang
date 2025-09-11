@@ -4,6 +4,7 @@
  */
 
 pub mod javascript;
+pub mod wasm;
 
 use crate::ast::Program;
 use crate::mir;
@@ -34,8 +35,9 @@ impl CodeGenerator {
                 Ok(js_code.into_bytes())
             }
             CompilationTarget::WebAssembly => {
-                // TODO: Implement WebAssembly generation
-                Ok(b"/* TODO: WebAssembly generation */".to_vec())
+                let wasm_code = wasm::WasmGenerator::new()
+                    .generate(program)?;
+                Ok(wasm_code)
             }
             CompilationTarget::Native => {
                 // TODO: Implement native code generation

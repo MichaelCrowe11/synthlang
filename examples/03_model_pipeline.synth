@@ -1,0 +1,121 @@
+// Example 3: Complex AI Pipeline with Model Graphs
+
+import synth.ai.*;
+import synth.graph.*;
+import synth.stream.*;
+
+// Define a multi-model pipeline for document processing
+graph DocumentPipeline {
+    // Node definitions with model specifications
+    node ocr = model("azure:vision-ocr") {
+        input: Image,
+        output: Text,
+    };
+    
+    node classifier = model("hf:bert-base-uncased") {
+        input: Text,
+        output: Classification,
+    };
+    
+    node summarizer = model("openai:gpt-4") {
+        input: Text,
+        output: Summary,
+        constraints: [MaxTokens(500)],
+    };
+    
+    node translator = model("google:translate") {
+        input: Text,
+        output: Text,
+        config: { target_lang: "es" },
+    };
+    
+    // Edge definitions with data flow
+    edge image -> ocr -> text;
+    edge text -> classifier -> category;
+    edge text -> summarizer -> summary;
+    edge summary -> translator -> spanish_summary;
+    
+    // Aggregation node
+    node aggregator = fn(category, summary, spanish_summary) {
+        return {
+            category: category,
+            summary: summary,
+            translations: { es: spanish_summary },
+        };
+    };
+}
+
+// Stream processing with backpressure
+@effects(IO, Device(GPU))
+async fn process_documents(
+    input_stream: Stream<Document>
+) -> Stream<ProcessedDoc> ![IO, Device(GPU)] {
+    let pipeline = DocumentPipeline::new() ![IO];
+    
+    // Configure caching and batching
+    pipeline.configure({
+        cache: KVCache { size: 1024 },
+        batch_size: 8,
+        max_concurrent: 4,
+    });
+    
+    // Process stream with automatic parallelization
+    return input_stream
+        .map_concurrent(4, |doc| async {
+            // Extract image from document
+            let image = doc.extract_image() ![IO];
+            
+            // Run through pipeline with tracing
+            let result = pipeline.run(image) ![IO, Device(GPU)] with {
+                trace: true,
+                timeout: 30s,
+            };
+            
+            ProcessedDoc {
+                id: doc.id,
+                result: result,
+                timestamp: now(),
+            }
+        })
+        .buffer_unordered(16);  // Buffer for throughput
+}
+
+// Monitoring and metrics
+@effects(IO)
+fn monitor_pipeline(pipeline: &DocumentPipeline) ![IO] {
+    let metrics = pipeline.metrics();
+    
+    println("Pipeline Metrics:");
+    println("  Total processed: {}", metrics.total_requests);
+    println("  Avg latency: {:.2}ms", metrics.avg_latency_ms);
+    println("  Cache hit rate: {:.2}%", metrics.cache_hit_rate * 100.0);
+    
+    // Per-node metrics
+    for (node, node_metrics) in metrics.nodes {
+        println("  Node '{}': {:.2}ms avg", node, node_metrics.avg_latency_ms);
+    }
+}
+
+@effects(IO, Random, Device(GPU))
+async fn main() ![IO, Random, Device(GPU)] {
+    // Create document stream from directory
+    let documents = stream_from_dir("./documents") ![IO];
+    
+    // Process with pipeline
+    let processed = process_documents(documents).await;
+    
+    // Save results with deterministic ordering
+    let mut results = vec![];
+    while let Some(doc) = processed.next().await {
+        results.push(doc);
+    }
+    
+    // Sort for reproducibility
+    results.sort_by_key(|d| d.id);
+    
+    // Save with versioning
+    save_json(results, "./output/processed_docs.json") ![IO];
+    
+    // Print metrics
+    monitor_pipeline(&pipeline);
+}

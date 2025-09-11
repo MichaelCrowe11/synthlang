@@ -1,0 +1,168 @@
+{
+  "name": "synthlang",
+  "displayName": "SynthLang",
+  "description": "Language support for SynthLang - The generative AI pipeline DSL",
+  "version": "0.1.0",
+  "publisher": "synthlang",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/synth-lang/synth"
+  },
+  "license": "Apache-2.0",
+  "icon": "images/logo.png",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "AI",
+    "Other"
+  ],
+  "keywords": [
+    "llm",
+    "ai",
+    "pipeline",
+    "dsl",
+    "prompt",
+    "evaluation"
+  ],
+  "activationEvents": [
+    "onLanguage:synth"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "synth",
+        "aliases": ["SynthLang", "synth"],
+        "extensions": [".synth"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "synth",
+        "scopeName": "source.synth",
+        "path": "./syntaxes/synth.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "synthlang.runPipeline",
+        "title": "Run Pipeline",
+        "category": "SynthLang",
+        "icon": "$(play)"
+      },
+      {
+        "command": "synthlang.validatePipeline",
+        "title": "Validate Pipeline",
+        "category": "SynthLang",
+        "icon": "$(check)"
+      },
+      {
+        "command": "synthlang.runEvaluation",
+        "title": "Run Evaluation",
+        "category": "SynthLang",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "synthlang.showMetrics",
+        "title": "Show Metrics",
+        "category": "SynthLang",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "synthlang.deployPipeline",
+        "title": "Deploy Pipeline",
+        "category": "SynthLang",
+        "icon": "$(cloud-upload)"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "synthlang.runPipeline",
+          "when": "resourceLangId == synth",
+          "group": "synthlang"
+        },
+        {
+          "command": "synthlang.validatePipeline", 
+          "when": "resourceLangId == synth",
+          "group": "synthlang"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "synthlang.runPipeline",
+          "when": "resourceLangId == synth",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "type": "object",
+      "title": "SynthLang Configuration",
+      "properties": {
+        "synthlang.compiler.path": {
+          "type": "string",
+          "default": "synth",
+          "description": "Path to the SynthLang compiler"
+        },
+        "synthlang.enableLSP": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Language Server Protocol support"
+        },
+        "synthlang.trace.server": {
+          "type": "string",
+          "enum": ["off", "messages", "verbose"],
+          "default": "off",
+          "description": "Traces the communication between VSCode and the language server"
+        },
+        "synthlang.evaluation.autoRun": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically run evaluations on save"
+        },
+        "synthlang.metrics.endpoint": {
+          "type": "string",
+          "description": "Metrics collection endpoint URL"
+        },
+        "synthlang.deployment.defaultTarget": {
+          "type": "string",
+          "default": "local",
+          "enum": ["local", "cloud", "edge"],
+          "description": "Default deployment target"
+        }
+      }
+    },
+    "snippets": [
+      {
+        "language": "synth",
+        "path": "./snippets/synth.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^6.4.1",
+    "@typescript-eslint/parser": "^6.4.1",
+    "eslint": "^8.47.0",
+    "typescript": "^5.1.6",
+    "vsce": "^2.15.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^8.1.0"
+  }
+}

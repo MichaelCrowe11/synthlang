@@ -1,137 +1,294 @@
-# SYNTH Programming Language
+# SynthLang 🚀
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/rust-1.75%2B-orange.svg)](https://www.rust-lang.org)
-[![Status](https://img.shields.io/badge/status-proof--of--concept-yellow.svg)]()
+[![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-007ACC?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=synthlang.synthlang)
+[![GitHub Stars](https://img.shields.io/github/stars/synth-lang/synth?style=social)](https://github.com/synth-lang/synth)
+[![Discord](https://img.shields.io/discord/123456789?color=7289da&logo=discord&logoColor=white)](https://discord.gg/synthlang)
 
-*The Universal Synthesis Language*
+**The Generative AI Pipeline DSL** - Compose, evaluate, and deploy LLM pipelines with confidence.
 
-**Synthesize Everything. Deploy Anywhere.**
+```synth
+pipeline CustomerSupport {
+    // Multi-model routing with A/B testing
+    router intent_classifier {
+        strategy: ab_split(0.5)
+        routes: [
+            {name: "gpt4", target: gpt4_model},
+            {name: "claude", target: claude_model}
+        ]
+    }
+    
+    // Built-in safety & compliance
+    guardrail safety {
+        toxicity_threshold: 0.1
+        pii_detection: true
+        bias_check: ["gender", "race"]
+    }
+    
+    // Smart caching & evaluation
+    cache responses {
+        ttl: 3600
+        strategy: semantic_similarity(0.95)
+    }
+}
+```
 
-SYNTH is an AI-native, cross-domain programming language that synthesizes multiple paradigms, languages, and computing models into one unified system.
+## 🎯 Why SynthLang?
 
-## 🌟 Key Features
-
-- **Universal Compilation**: Compile to WebAssembly, native code, quantum circuits, and edge devices
-- **AI-First Operations**: Native LLM integration, semantic types, and uncertainty quantification
-- **Cross-Domain Translation**: Seamlessly work across healthcare, finance, scientific computing
-- **Polyglot Execution**: Execute Python, JavaScript, Rust, and more within SYNTH programs
-- **Zero-Knowledge Compilation**: Privacy-preserving computation built-in
-- **Self-Evolving Syntax**: Language improves itself based on usage patterns
+- **🔄 Multi-Model Orchestration**: Route between models, A/B test, and optimize costs automatically
+- **🛡️ Built-in Safety**: Toxicity detection, bias testing, and PII protection out of the box
+- **📊 Comprehensive Evaluation**: Dataset versioning, statistical testing, and performance metrics
+- **⚡ Production Ready**: Caching, rate limiting, and monitoring built into the language
+- **🎨 Developer Experience**: VS Code extension with IntelliSense, debugging, and live metrics
 
 ## 🚀 Quick Start
 
-```synth
-// AI-powered data analysis with cross-domain semantic understanding
-@ai_model("gpt-4")
-function analyze_patient_risk(data: HealthData) -> uncertain<RiskLevel> {
-    // Semantic similarity search
-    similar_cases = knowledge_graph.find {
-        symptoms ~~ data.symptoms
-        confidence > 0.85
-    }
-    
-    // AI-generated analysis
-    analysis = ai.generate {
-        prompt: "Analyze risk factors: {data.to_json()}"
-        context: similar_cases
-    }
-    
-    return analysis.risk_level
-}
+### Install the VS Code Extension (Free)
 
-// Quantum-accelerated optimization
-quantum circuit optimize_portfolio(assets: FinancialData) {
-    qubits = encode_assets(assets)
-    apply_optimization_gates(qubits)
-    return measure_optimal_allocation(qubits)
-}
+1. Open VS Code
+2. Search for "SynthLang" in Extensions
+3. Click Install
 
-// Template system with AI enhancement
-template SmartCard {
-    @ai_enhanced
-    render(data: Product) {
-        <div class="card">
-            {ai.generate_description(data)}
-            <RecommendedItems items={ai.related(data)} />
-        </div>
-    }
-}
-```
-
-## 📦 Installation
+### Install the CLI
 
 ```bash
-# Install SYNTH compiler
-npm install -g @synth-lang/cli
+# NPM
+npm install -g synthlang
 
-# Or using cargo
-cargo install synth-lang
+# Or using Cargo
+cargo install synthlang
 
 # Or download binary
-curl -sSL https://get.synthlang.org | sh
+curl -sSL https://get.synthlang.ai | sh
 ```
 
-## 🏗️ Project Structure
+### Your First Pipeline
+
+Create `hello.synth`:
+
+```synth
+pipeline HelloWorld {
+    prompt greeting {
+        template: """
+        Generate a friendly greeting for {{name}}.
+        Make it warm and welcoming!
+        """
+    }
+    
+    model gpt {
+        provider: "openai"
+        model: "gpt-3.5-turbo"
+        temperature: 0.7
+    }
+    
+    edges: [
+        input -> greeting -> gpt -> output
+    ]
+}
+
+// Run with: synth run hello.synth --input '{"name": "Alice"}'
+```
+
+## 📦 Features
+
+### Free Tier
+- ✅ VS Code Extension with syntax highlighting
+- ✅ Local pipeline execution
+- ✅ Basic evaluation metrics
+- ✅ Community support
+
+### Pro Tier ($49/mo)
+- ✅ Everything in Free
+- ✅ Advanced caching strategies
+- ✅ A/B testing & routing
+- ✅ Bias & toxicity detection
+- ✅ Dataset versioning
+- ✅ Priority support
+
+### Team Tier ($199/mo)
+- ✅ Everything in Pro
+- ✅ Team collaboration
+- ✅ Audit trails
+- ✅ Custom guardrails
+- ✅ SLA guarantees
+- ✅ Dedicated support
+
+### Enterprise (Custom)
+- ✅ Everything in Team
+- ✅ On-premise deployment
+- ✅ Custom integrations
+- ✅ Compliance reporting
+- ✅ 24/7 support
+
+## 🏗️ Architecture
 
 ```
-synth-lang/
-├── compiler/           # SYNTH → MLIR → Target compilation
-├── runtime/           # Universal execution engine
-├── stdlib/            # Standard library
-├── ai-engine/         # LLM integration and AI operations
-├── semantic/          # Knowledge graph and reasoning
-├── quantum/           # Quantum computing support
-├── examples/          # Example programs
-├── docs/              # Documentation
-└── tools/             # Development tools
+┌─────────────────────────────────────────┐
+│           SynthLang Pipeline            │
+├─────────────────────────────────────────┤
+│  DSL Parser → Graph Builder → Executor  │
+├─────────────────────────────────────────┤
+│  Safety Layer (Toxicity, Bias, PII)     │
+├─────────────────────────────────────────┤
+│  Caching & Optimization Layer           │
+├─────────────────────────────────────────┤
+│  Model Providers (OpenAI, Anthropic...) │
+└─────────────────────────────────────────┘
 ```
 
-## 🔧 Building from Source
+## 📊 Evaluation & Testing
+
+```synth
+eval CustomerSupportQuality {
+    dataset: "support_test_v1"  // Versioned dataset
+    
+    metrics: {
+        accuracy: true,
+        toxicity: true,
+        bias: true,
+        latency_p95: 2000  // ms
+    }
+    
+    comparison: {
+        baseline: "gpt-3.5",
+        candidates: ["CustomerSupport"],
+        significance: 0.95
+    }
+}
+```
+
+## 🛡️ Safety First
+
+Every pipeline automatically includes:
+
+- **Toxicity Detection**: Perspective API integration
+- **Bias Testing**: Multi-dimensional bias detection
+- **PII Protection**: Automatic redaction
+- **Adversarial Testing**: Jailbreak prevention
+- **Audit Logging**: Complete traceability
+
+## 🔧 Advanced Features
+
+### Multi-Stage Pipelines
+```synth
+pipeline MultiStage {
+    // Stage 1: Classification
+    model classifier { ... }
+    
+    // Stage 2: Specialized routing
+    router by_intent {
+        strategy: conditional
+        routes: [
+            {condition: "intent == 'technical'", target: tech_expert},
+            {condition: "intent == 'billing'", target: billing_expert}
+        ]
+    }
+}
+```
+
+### Dataset Versioning
+```synth
+dataset CustomerQueries {
+    version: "2.1.0"
+    parent: "CustomerQueries@2.0.0"
+    
+    transformations: [
+        {type: "filter", condition: "quality_score > 0.8"},
+        {type: "augment", method: "paraphrase"}
+    ]
+}
+```
+
+### A/B Testing
+```synth
+router experiment {
+    strategy: ab_split(0.5)
+    
+    metrics: [
+        "response_quality",
+        "latency",
+        "cost"
+    ]
+    
+    auto_optimize: true  // Automatically shift traffic
+}
+```
+
+## 📈 Metrics & Monitoring
+
+Real-time metrics dashboard in VS Code:
+- Request volume & latency
+- Cost tracking
+- Cache hit rates
+- Error rates
+- A/B test results
+
+## 🤝 Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ```bash
+# Clone the repo
 git clone https://github.com/synth-lang/synth
 cd synth
+
+# Install dependencies
 cargo build --release
 
 # Run tests
 cargo test
 
-# Build documentation
-cargo doc --open
+# Run examples
+synth run examples/
 ```
-
-## 🌐 Language Ecosystem
-
-SYNTH is part of a comprehensive language ecosystem:
-
-- **[OMNIX](https://github.com/omnix-lang/omnix)** - Distributed systems language
-- **[CYPHERLANG](https://github.com/cypher-lang/cypher)** - Security-first language  
-- **[PULSAR](https://github.com/pulsar-lang/pulsar)** - Real-time systems language
-- **[GENESIS](https://github.com/genesis-lang/genesis)** - Self-modifying language
 
 ## 📚 Documentation
 
-- [Language Guide](./docs/guide/README.md)
-- [API Reference](./docs/api/README.md)
-- [Examples](./examples/README.md)
-- [Contributing](./CONTRIBUTING.md)
+- [Language Guide](https://docs.synthlang.ai/guide)
+- [API Reference](https://docs.synthlang.ai/api)
+- [Examples](./examples/)
+- [Blog](https://synthlang.ai/blog)
 
-## 🤝 Contributing
+## 🗺️ Roadmap
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+### Phase 0 (Current) - Free Extension
+- ✅ VS Code extension
+- ✅ Basic pipeline runner
+- ✅ Evaluation harness
+
+### Phase 1 (Q1 2024) - Pro Launch
+- 🔄 Cloud execution
+- 🔄 Advanced caching
+- 🔄 Team features
+
+### Phase 2 (Q2 2024) - Enterprise
+- 📋 Fine-tuning management
+- 📋 Compliance suite
+- 📋 Custom deployments
+
+### Phase 3 (Q3 2024) - Platform
+- 📋 Model marketplace
+- 📋 Component library
+- 📋 Community hub
+
+## 💬 Community
+
+- [Discord](https://discord.gg/synthlang) - Join our community
+- [Twitter](https://twitter.com/synthlang) - Follow for updates
+- [GitHub Discussions](https://github.com/synth-lang/synth/discussions) - Ask questions
 
 ## 📄 License
 
-Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) for details.
+Licensed under Apache 2.0. See [LICENSE](LICENSE) for details.
 
-## 🔗 Links
+## 🙏 Acknowledgments
 
-- Website: https://synthlang.org
-- Documentation: https://docs.synthlang.org
-- Discord: https://discord.gg/synthlang
-- Twitter: [@synthlang](https://twitter.com/synthlang)
+Built with ❤️ by the SynthLang team.
+
+Special thanks to our contributors and early adopters!
 
 ---
 
-*SYNTH: Synthesizing the future of programming*
+**Ready to build safer, more reliable AI pipelines?**
+
+[Get Started →](https://synthlang.ai/docs/quickstart) | [View Examples →](./examples/) | [Join Discord →](https://discord.gg/synthlang)

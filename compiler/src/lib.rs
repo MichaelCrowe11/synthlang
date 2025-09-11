@@ -9,9 +9,14 @@ pub mod ast;
 pub mod lexer;
 pub mod parser;
 pub mod token;
+pub mod types;
 pub mod semantic;
+pub mod template;
 pub mod codegen;
 pub mod diagnostics;
+pub mod hlir;  // HLIR-S: High-Level IR with effects
+pub mod typeck; // Type checker with linear/affine resources and effects
+pub mod ai_primitives; // AI primitives with deterministic logging
 pub mod hir;
 pub mod mir;
 pub mod ty;

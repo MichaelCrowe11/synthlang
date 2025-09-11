@@ -1,0 +1,87 @@
+// Example 2: Tensor Operations with Automatic Differentiation
+
+import synth.tensor.*;
+import synth.nn.*;
+import synth.optim.*;
+
+// Simple neural network with type-safe tensor operations
+@differentiable
+fn mlp_layer(
+    x: Tensor<f32, [B, 784]>,      // Input: batch × 784 (MNIST)
+    w1: Tensor<f32, [784, 256]>,   // First layer weights
+    b1: Tensor<f32, [256]>,         // First layer bias
+    w2: Tensor<f32, [256, 10]>,    // Output layer weights
+    b2: Tensor<f32, [10]>           // Output layer bias
+) -> Tensor<f32, [B, 10]> ![Grad] {
+    // Shape inference ensures correctness at compile time
+    let h1 = relu(x @ w1 + b1);    // [B, 784] @ [784, 256] -> [B, 256]
+    let logits = h1 @ w2 + b2;     // [B, 256] @ [256, 10] -> [B, 10]
+    return logits;
+}
+
+// Loss function with automatic differentiation
+@differentiable
+fn cross_entropy_loss(
+    logits: Tensor<f32, [B, C]>,
+    labels: Tensor<i32, [B]>
+) -> Tensor<f32, []> ![Grad] {
+    let probs = softmax(logits, dim: -1);
+    let loss = -mean(gather(log(probs), labels));
+    return loss;
+}
+
+// Training step with gradient computation
+@effects(Grad, Device(GPU))
+fn train_step(
+    model: &mut ModelParams,
+    x: Tensor<f32, [32, 784]>,
+    y: Tensor<i32, [32]>,
+    lr: f32
+) ![Grad, Device(GPU)] {
+    // Forward pass
+    let logits = mlp_layer(x, model.w1, model.b1, model.w2, model.b2);
+    let loss = cross_entropy_loss(logits, y);
+    
+    // Automatic differentiation
+    let grads = grad(loss, wrt: [model.w1, model.b1, model.w2, model.b2]) ![Grad];
+    
+    // Update parameters (in-place operations)
+    model.w1 -= lr * grads.w1;
+    model.b1 -= lr * grads.b1;
+    model.w2 -= lr * grads.w2;
+    model.b2 -= lr * grads.b2;
+    
+    println("Loss: {:.4}", loss.item());
+}
+
+// Model parameters with device placement
+struct ModelParams {
+    w1: Tensor<f32, [784, 256]> @device(GPU),
+    b1: Tensor<f32, [256]> @device(GPU),
+    w2: Tensor<f32, [256, 10]> @device(GPU),
+    b2: Tensor<f32, [10]> @device(GPU),
+}
+
+@effects(IO, Random, Grad, Device(GPU))
+fn main() ![IO, Random, Grad, Device(GPU)] {
+    // Initialize model with Xavier initialization
+    let mut model = ModelParams {
+        w1: xavier_uniform([784, 256]) ![Random],
+        b1: zeros([256]),
+        w2: xavier_uniform([256, 10]) ![Random],
+        b2: zeros([10]),
+    };
+    
+    // Load MNIST dataset
+    let dataset = load_mnist("./data/mnist") ![IO];
+    
+    // Training loop
+    for epoch in 0..10 {
+        for (x_batch, y_batch) in dataset.batches(32) {
+            train_step(&mut model, x_batch, y_batch, 0.01);
+        }
+    }
+    
+    // Save model (linear resource ensures proper cleanup)
+    save_checkpoint(model, "./checkpoints/mnist_mlp.synth") ![IO];
+}

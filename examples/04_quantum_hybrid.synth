@@ -1,0 +1,185 @@
+// Example 4: Hybrid Quantum-Classical Computing with VQE
+
+import synth.quantum.*;
+import synth.tensor.*;
+import synth.optim.*;
+
+// Quantum circuit for variational quantum eigensolver (VQE)
+@quantum
+qkernel vqe_ansatz(params: Tensor<f64, [6]>) -> Measurement ![Quantum] {
+    // Allocate 2 qubits
+    let q = qalloc<2>();
+    
+    // Initial state preparation
+    H(q[0]);
+    H(q[1]);
+    
+    // Parameterized rotation gates
+    RY(params[0], q[0]);
+    RY(params[1], q[1]);
+    
+    // Entangling layer
+    CNOT(q[0], q[1]);
+    
+    // More rotations
+    RZ(params[2], q[0]);
+    RZ(params[3], q[1]);
+    
+    // Second entangling layer
+    CNOT(q[1], q[0]);
+    
+    // Final rotations
+    RY(params[4], q[0]);
+    RY(params[5], q[1]);
+    
+    // Measure in computational basis
+    return measure_all(q);
+}
+
+// Hamiltonian expectation value
+@differentiable
+fn expectation_value(
+    params: Tensor<f64, [6]>,
+    hamiltonian: SparseTensor<f64>
+) -> f64 ![Quantum, Grad] {
+    // Run quantum circuit multiple times for statistics
+    let n_shots = 1024;
+    let measurements = vec![];
+    
+    for _ in 0..n_shots {
+        let outcome = vqe_ansatz(params) ![Quantum];
+        measurements.push(outcome);
+    }
+    
+    // Compute expectation value
+    let expectation = compute_expectation(measurements, hamiltonian);
+    return expectation;
+}
+
+// Parameter-shift rule for quantum gradients
+@differentiable
+fn quantum_gradient(
+    params: Tensor<f64, [6]>,
+    hamiltonian: SparseTensor<f64>
+) -> Tensor<f64, [6]> ![Quantum, Grad] {
+    let shift = π / 2.0;
+    let mut grads = zeros([6]);
+    
+    for i in 0..6 {
+        // Forward shift
+        let params_plus = params.clone();
+        params_plus[i] += shift;
+        let E_plus = expectation_value(params_plus, hamiltonian);
+        
+        // Backward shift
+        let params_minus = params.clone();
+        params_minus[i] -= shift;
+        let E_minus = expectation_value(params_minus, hamiltonian);
+        
+        // Parameter-shift gradient
+        grads[i] = (E_plus - E_minus) / (2.0 * sin(shift));
+    }
+    
+    return grads;
+}
+
+// Classical optimizer for VQE
+@effects(Quantum, Grad, Random)
+fn optimize_vqe(
+    hamiltonian: SparseTensor<f64>,
+    max_iters: u32
+) -> (Tensor<f64, [6]>, f64) ![Quantum, Grad, Random] {
+    // Initialize parameters randomly
+    let mut params = uniform([6], -π, π) ![Random];
+    let optimizer = Adam { lr: 0.01, betas: (0.9, 0.999) };
+    
+    let mut best_energy = f64::MAX;
+    let mut best_params = params.clone();
+    
+    for iter in 0..max_iters {
+        // Compute energy and gradients
+        let energy = expectation_value(params, hamiltonian) ![Quantum];
+        let grads = quantum_gradient(params, hamiltonian) ![Quantum, Grad];
+        
+        // Update parameters
+        params = optimizer.step(params, grads);
+        
+        // Track best solution
+        if energy < best_energy {
+            best_energy = energy;
+            best_params = params.clone();
+        }
+        
+        if iter % 10 == 0 {
+            println("Iteration {}: Energy = {:.6}", iter, energy);
+        }
+    }
+    
+    return (best_params, best_energy);
+}
+
+// Quantum machine learning: Quantum Neural Network
+@quantum
+qkernel qnn_layer(
+    input: Tensor<f64, [4]>,
+    weights: Tensor<f64, [4, 4]>
+) -> Tensor<f64, [4]> ![Quantum] {
+    let n_qubits = 4;
+    let q = qalloc<4>();
+    
+    // Encode classical input
+    for i in 0..n_qubits {
+        RY(input[i] * π, q[i]);
+    }
+    
+    // Parameterized quantum layer
+    for i in 0..n_qubits {
+        for j in 0..n_qubits {
+            if i != j {
+                controlled_RZ(weights[i, j], q[i], q[j]);
+            }
+        }
+    }
+    
+    // Measure and return probabilities
+    let probs = measure_probs(q);
+    return probs;
+}
+
+@effects(IO, Quantum, Grad, Random)
+fn main() ![IO, Quantum, Grad, Random] {
+    // Define H2 molecule Hamiltonian (simplified)
+    let H2_hamiltonian = SparseTensor::from_list([
+        ([0, 0], -1.0523),
+        ([0, 1], 0.3979),
+        ([1, 0], 0.3979),
+        ([1, 1], -0.3979),
+        ([2, 2], -0.0113),
+        ([3, 3], 0.0113),
+    ]);
+    
+    println("Starting VQE optimization for H2 molecule...");
+    
+    // Run VQE with deterministic seed
+    with_seed(42) ![Random] {
+        let (optimal_params, ground_energy) = optimize_vqe(H2_hamiltonian, 100);
+        
+        println("\nOptimization complete!");
+        println("Ground state energy: {:.6} Hartree", ground_energy);
+        println("Optimal parameters: {:?}", optimal_params);
+        
+        // Save results for reproducibility
+        save_npz({
+            "params": optimal_params,
+            "energy": ground_energy,
+            "hamiltonian": H2_hamiltonian,
+        }, "./results/vqe_h2.npz") ![IO];
+    }
+    
+    // Quantum ML example
+    println("\nQuantum Neural Network demo:");
+    let input = tensor([0.1, 0.2, 0.3, 0.4]);
+    let weights = xavier_uniform([4, 4]) ![Random];
+    let output = qnn_layer(input, weights) ![Quantum];
+    println("QNN output: {:?}", output);
+}

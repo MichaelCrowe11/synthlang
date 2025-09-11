@@ -1,0 +1,264 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "SynthLang",
+  "scopeName": "source.synth",
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "include": "#keywords"
+    },
+    {
+      "include": "#strings"
+    },
+    {
+      "include": "#numbers"
+    },
+    {
+      "include": "#pipeline-definitions"
+    },
+    {
+      "include": "#node-definitions"
+    },
+    {
+      "include": "#eval-definitions"
+    },
+    {
+      "include": "#operators"
+    },
+    {
+      "include": "#identifiers"
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.synth",
+          "begin": "//",
+          "end": "$",
+          "captures": {
+            "0": {
+              "name": "punctuation.definition.comment.synth"
+            }
+          }
+        },
+        {
+          "name": "comment.block.synth",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "captures": {
+            "0": {
+              "name": "punctuation.definition.comment.synth"
+            }
+          }
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.synth",
+          "match": "\\b(pipeline|flow|node|model|prompt|router|guardrail|cache|evaluator|eval|deploy|config|edges|if|else|for|while|async|await|with)\\b"
+        },
+        {
+          "name": "keyword.operator.synth", 
+          "match": "\\b(and|or|not|in|is)\\b"
+        },
+        {
+          "name": "storage.type.synth",
+          "match": "\\b(string|number|boolean|array|object|tensor|embedding)\\b"
+        },
+        {
+          "name": "storage.modifier.synth",
+          "match": "\\b(let|const|var|fn|async)\\b"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.synth",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            {
+              "name": "constant.character.escape.synth",
+              "match": "\\\\."
+            },
+            {
+              "include": "#template-variables"
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.single.synth",
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            {
+              "name": "constant.character.escape.synth",
+              "match": "\\\\."
+            }
+          ]
+        },
+        {
+          "name": "string.quoted.triple.synth",
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "patterns": [
+            {
+              "include": "#template-variables"
+            }
+          ]
+        }
+      ]
+    },
+    "template-variables": {
+      "patterns": [
+        {
+          "name": "variable.other.template.synth",
+          "match": "\\{\\{\\s*([a-zA-Z_][a-zA-Z0-9_]*)\\s*\\}\\}",
+          "captures": {
+            "1": {
+              "name": "variable.other.readwrite.synth"
+            }
+          }
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.synth",
+          "match": "\\b\\d+\\.\\d*([eE][+-]?\\d+)?\\b"
+        },
+        {
+          "name": "constant.numeric.integer.synth",
+          "match": "\\b\\d+\\b"
+        }
+      ]
+    },
+    "pipeline-definitions": {
+      "patterns": [
+        {
+          "name": "meta.pipeline.synth",
+          "begin": "\\b(pipeline)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.synth"
+            },
+            "2": {
+              "name": "entity.name.type.pipeline.synth"
+            }
+          },
+          "end": "\\}",
+          "patterns": [
+            {
+              "include": "$self"
+            }
+          ]
+        }
+      ]
+    },
+    "node-definitions": {
+      "patterns": [
+        {
+          "name": "meta.node.synth",
+          "begin": "\\b(model|prompt|router|guardrail|cache|evaluator)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "storage.type.node.synth"
+            },
+            "2": {
+              "name": "entity.name.function.node.synth"
+            }
+          },
+          "end": "\\}",
+          "patterns": [
+            {
+              "include": "#node-properties"
+            },
+            {
+              "include": "$self"
+            }
+          ]
+        }
+      ]
+    },
+    "node-properties": {
+      "patterns": [
+        {
+          "name": "variable.other.property.synth",
+          "match": "\\b(provider|model|temperature|max_tokens|template|strategy|ttl|threshold|metrics)\\b"
+        }
+      ]
+    },
+    "eval-definitions": {
+      "patterns": [
+        {
+          "name": "meta.eval.synth",
+          "begin": "\\b(eval)\\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+          "beginCaptures": {
+            "1": {
+              "name": "keyword.control.synth"
+            },
+            "2": {
+              "name": "entity.name.type.eval.synth"
+            }
+          },
+          "end": "\\}",
+          "patterns": [
+            {
+              "include": "#eval-properties"
+            },
+            {
+              "include": "$self"
+            }
+          ]
+        }
+      ]
+    },
+    "eval-properties": {
+      "patterns": [
+        {
+          "name": "variable.other.property.eval.synth",
+          "match": "\\b(dataset|test_cases|metrics|baseline|comparison|accuracy|relevance|toxicity|bias)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.synth",
+          "match": "="
+        },
+        {
+          "name": "keyword.operator.comparison.synth",
+          "match": "(==|!=|<=|>=|<|>)"
+        },
+        {
+          "name": "keyword.operator.logical.synth",
+          "match": "(&&|\\|\\||!)"
+        },
+        {
+          "name": "keyword.operator.arithmetic.synth",
+          "match": "(\\+|\\-|\\*|\\/|%)"
+        },
+        {
+          "name": "keyword.operator.pipeline.synth",
+          "match": "(->|\\||&)"
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "variable.other.readwrite.synth",
+          "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+        }
+      ]
+    }
+  }
+}

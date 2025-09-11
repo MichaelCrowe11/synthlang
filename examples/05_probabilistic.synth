@@ -1,0 +1,199 @@
+// Example 5: Probabilistic Programming with Bayesian Inference
+
+import synth.prob.*;
+import synth.tensor.*;
+import synth.inference.*;
+
+// Bayesian linear regression model
+@probabilistic
+model BayesianRegression(X: Tensor<f32, [N, D]>, y_obs: Tensor<f32, [N]>) {
+    // Prior distributions
+    let σ ~ HalfCauchy(scale: 1.0) ![Random];
+    let α ~ Normal(0.0, 10.0) ![Random];
+    let β ~ Normal(zeros([D]), 10.0 * ones([D])) ![Random];
+    
+    // Linear model
+    let μ = α + X @ β;
+    
+    // Likelihood
+    y ~ Normal(μ, σ) ![Random];
+    
+    // Condition on observed data
+    observe(y, y_obs);
+    
+    // Return posterior distributions
+    return posterior(α, β, σ);
+}
+
+// Hierarchical model for A/B testing
+@probabilistic
+model ABTest(
+    conversions_A: Tensor<i32, [N_A]>,
+    conversions_B: Tensor<i32, [N_B]>
+) {
+    // Hyperpriors
+    let μ_prior ~ Normal(0.0, 1.0) ![Random];
+    let σ_prior ~ HalfNormal(1.0) ![Random];
+    
+    // Group-level parameters
+    let θ_A ~ Beta(1.0 + μ_prior * σ_prior, 1.0) ![Random];
+    let θ_B ~ Beta(1.0 + μ_prior * σ_prior, 1.0) ![Random];
+    
+    // Observations
+    conversions_A ~ Bernoulli(θ_A) ![Random];
+    conversions_B ~ Bernoulli(θ_B) ![Random];
+    
+    // Compute lift
+    let lift = (θ_B - θ_A) / θ_A;
+    
+    return {
+        θ_A: posterior(θ_A),
+        θ_B: posterior(θ_B),
+        lift: posterior(lift),
+        p_B_better: prob(θ_B > θ_A),
+    };
+}
+
+// Variational autoencoder with probabilistic decoder
+@differentiable
+@probabilistic
+fn vae_decoder(
+    z: Tensor<f32, [B, Z]>,
+    decoder_params: DecoderParams
+) -> Distribution<Tensor<f32, [B, 784]>> ![Random, Grad] {
+    // Decode latent to parameters
+    let h1 = relu(z @ decoder_params.w1 + decoder_params.b1);
+    let h2 = relu(h1 @ decoder_params.w2 + decoder_params.b2);
+    let μ = sigmoid(h2 @ decoder_params.w3 + decoder_params.b3);
+    
+    // Return Bernoulli distribution over pixels
+    return Bernoulli(μ);
+}
+
+// ELBO loss for VAE
+@differentiable
+fn elbo_loss(
+    x: Tensor<f32, [B, 784]>,
+    encoder: EncoderParams,
+    decoder: DecoderParams
+) -> Tensor<f32, []> ![Random, Grad] {
+    // Encode to latent distribution
+    let (μ_z, σ_z) = encode(x, encoder);
+    let q_z = Normal(μ_z, σ_z);
+    
+    // Sample from latent
+    let z = q_z.sample() ![Random];
+    
+    // Decode
+    let p_x = vae_decoder(z, decoder);
+    
+    // Reconstruction loss
+    let recon_loss = -p_x.log_prob(x).sum();
+    
+    // KL divergence
+    let prior = Normal(zeros_like(μ_z), ones_like(σ_z));
+    let kl_loss = kl_divergence(q_z, prior).sum();
+    
+    return recon_loss + kl_loss;
+}
+
+// Hamiltonian Monte Carlo sampling
+@effects(Random)
+fn hmc_sample<T>(
+    log_prob: fn(T) -> f32,
+    initial: T,
+    n_samples: u32,
+    step_size: f32,
+    n_leapfrog: u32
+) -> Vec<T> ![Random] {
+    let mut samples = vec![];
+    let mut current = initial;
+    
+    for _ in 0..n_samples {
+        // Sample momentum
+        let momentum = Normal(0.0, 1.0).sample_like(current) ![Random];
+        
+        // Leapfrog integration
+        let (new_pos, new_mom) = leapfrog(
+            current, momentum, log_prob, step_size, n_leapfrog
+        );
+        
+        // Metropolis acceptance
+        let accept_prob = exp(
+            log_prob(new_pos) - log_prob(current) +
+            momentum.norm() - new_mom.norm()
+        ).min(1.0);
+        
+        if uniform(0.0, 1.0) ![Random] < accept_prob {
+            current = new_pos;
+        }
+        
+        samples.push(current.clone());
+    }
+    
+    return samples;
+}
+
+// Normalizing flow for density estimation
+@differentiable
+struct NormalizingFlow {
+    layers: Vec<FlowLayer>,
+}
+
+@differentiable
+impl NormalizingFlow {
+    fn forward(x: Tensor<f32, [B, D]>) -> (Tensor<f32, [B, D]>, Tensor<f32, [B]>) ![Grad] {
+        let mut z = x;
+        let mut log_det = zeros([B]);
+        
+        for layer in self.layers {
+            let (z_new, ld) = layer.forward(z);
+            z = z_new;
+            log_det += ld;
+        }
+        
+        return (z, log_det);
+    }
+    
+    fn log_prob(x: Tensor<f32, [B, D]>) -> Tensor<f32, [B]> ![Grad] {
+        let (z, log_det) = self.forward(x);
+        let base_dist = Normal(0.0, 1.0);
+        return base_dist.log_prob(z).sum(dim: -1) + log_det;
+    }
+}
+
+@effects(IO, Random, Grad)
+fn main() ![IO, Random, Grad] {
+    // Bayesian regression example
+    println("Bayesian Linear Regression:");
+    let X = randn([100, 3]) ![Random];
+    let true_β = tensor([1.5, -2.0, 0.5]);
+    let y_true = X @ true_β + 0.1 * randn([100]) ![Random];
+    
+    // Run inference with NUTS
+    let posterior = infer(BayesianRegression(X, y_true)) ![Random] with {
+        method: NUTS { warmup: 500, samples: 1000 },
+        seed: 42,
+    };
+    
+    println("Posterior mean β: {:?}", posterior.β.mean());
+    println("Posterior std β: {:?}", posterior.β.std());
+    
+    // A/B test example
+    println("\nA/B Testing:");
+    let conversions_A = Bernoulli(0.10).sample([1000]) ![Random];
+    let conversions_B = Bernoulli(0.12).sample([1000]) ![Random];
+    
+    let ab_result = infer(ABTest(conversions_A, conversions_B)) ![Random] with {
+        method: VI { iterations: 1000 },
+    };
+    
+    println("P(B > A): {:.2}%", ab_result.p_B_better * 100.0);
+    println("Expected lift: {:.2}%", ab_result.lift.mean() * 100.0);
+    
+    // Save results
+    save_pickle({
+        "regression_posterior": posterior,
+        "ab_test_results": ab_result,
+    }, "./results/probabilistic.pkl") ![IO];
+}
