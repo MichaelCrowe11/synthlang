@@ -1,0 +1,43 @@
+{
+  "name": "synthlang",
+  "version": "1.0.0",
+  "description": "The Generative AI Pipeline DSL - Compose, evaluate, and deploy LLM pipelines with confidence",
+  "main": "dist/index.js",
+  "bin": {
+    "synth": "./bin/synth.js"
+  },
+  "directories": {
+    "doc": "docs",
+    "example": "examples"
+  },
+  "scripts": {
+    "start": "node dist/index.js",
+    "ide": "python -m http.server 8080 --directory ide/",
+    "dashboard": "node dist/dashboard.js",
+    "build": "echo 'Build requires Rust toolchain'",
+    "test": "echo 'Tests require Rust toolchain'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MichaelCrowe11/synthlang.git"
+  },
+  "keywords": [
+    "llm",
+    "ai",
+    "pipeline",
+    "dsl",
+    "generative-ai",
+    "orchestration",
+    "langchain",
+    "prompt-engineering"
+  ],
+  "author": "Michael Crowe",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/MichaelCrowe11/synthlang/issues"
+  },
+  "homepage": "https://github.com/MichaelCrowe11/synthlang#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}

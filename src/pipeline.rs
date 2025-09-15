@@ -8,6 +8,7 @@ use std::sync::Arc;
 use tokio::sync::{RwLock, Mutex};
 use serde::{Serialize, Deserialize};
 use async_trait::async_trait;
+use crate::monitoring::{MonitoringSystem, TraceStatus, LogLevel};
 
 /// Pipeline node representing a model or transformation
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -173,6 +174,7 @@ pub struct ExecutionEngine {
     router: Arc<Router>,
     evaluator: Arc<Evaluator>,
     guardrails: Arc<GuardrailEngine>,
+    monitoring: Arc<MonitoringSystem>,
 }
 
 /// Response cache for model outputs
@@ -299,18 +301,21 @@ impl PipelineBuilder {
             nodes,
             edges: self.edges,
             global_config: self.config,
-            execution_engine: Arc::new(ExecutionEngine::new()),
+            execution_engine: Arc::new(ExecutionEngine::new(
+                Arc::new(crate::monitoring::MonitoringSystem::new())
+            )),
         }
     }
 }
 
 impl ExecutionEngine {
-    pub fn new() -> Self {
+    pub fn new(monitoring: Arc<MonitoringSystem>) -> Self {
         Self {
             cache: Arc::new(RwLock::new(ResponseCache::new(1000))),
             router: Arc::new(Router::new()),
             evaluator: Arc::new(Evaluator::new()),
             guardrails: Arc::new(GuardrailEngine::new()),
+            monitoring,
         }
     }
 
@@ -320,6 +325,20 @@ impl ExecutionEngine {
         pipeline: &Pipeline,
         input: PipelineInput,
     ) -> Result<PipelineOutput, PipelineError> {
+        // Start pipeline-level tracing
+        let pipeline_span_id = self.monitoring.start_span(
+            "pipeline_execution", 
+            &pipeline.id, 
+            "root", 
+            None
+        );
+
+        // Record pipeline execution start
+        let mut labels = std::collections::HashMap::new();
+        labels.insert("pipeline_id".to_string(), pipeline.id.clone());
+        labels.insert("pipeline_name".to_string(), pipeline.name.clone());
+        self.monitoring.record_metric("pipeline_executions_started", 1.0, labels.clone());
+
         let mut context = ExecutionContext {
             variables: input.variables,
             trace: Vec::new(),
@@ -327,51 +346,224 @@ impl ExecutionEngine {
             start_time: std::time::Instant::now(),
         };
 
-        // Topological sort for execution order
-        let execution_order = self.topological_sort(&pipeline.nodes, &pipeline.edges)?;
+        let result = async {
+            // Topological sort for execution order
+            let execution_order = self.topological_sort(&pipeline.nodes, &pipeline.edges)?;
 
-        // Execute nodes in order
-        for node_id in execution_order {
-            let node = pipeline.nodes.get(&node_id)
-                .ok_or(PipelineError::NodeNotFound(node_id.clone()))?;
+            // Execute nodes in order
+            for node_id in execution_order {
+                let node = pipeline.nodes.get(&node_id)
+                    .ok_or(PipelineError::NodeNotFound(node_id.clone()))?;
 
-            // Check cache if enabled
-            if pipeline.global_config.cache_enabled {
-                if let Some(cached) = self.check_cache(&node_id, &context).await {
-                    context.trace.push(TraceEntry {
-                        node_id: node_id.clone(),
-                        cached: true,
-                        latency_ms: 0,
-                        tokens: 0,
-                        cost: 0.0,
-                    });
-                    continue;
+                // Start node-level tracing
+                let node_span_id = self.monitoring.start_span(
+                    "node_execution",
+                    &pipeline.id,
+                    &node_id,
+                    Some(pipeline_span_id.clone())
+                );
+
+                // Log node execution start
+                let mut fields = std::collections::HashMap::new();
+                fields.insert("node_type".to_string(), format!("{:?}", node.kind));
+                self.monitoring.add_span_log(
+                    &node_span_id,
+                    LogLevel::Info,
+                    "Starting node execution",
+                    fields
+                );
+
+                // Check cache if enabled
+                if pipeline.global_config.cache_enabled {
+                    if let Some(cached) = self.check_cache(&node_id, &context).await {
+                        self.monitoring.add_span_log(
+                            &node_span_id,
+                            LogLevel::Info,
+                            "Cache hit",
+                            std::collections::HashMap::new()
+                        );
+                        
+                        // Record cache hit metric
+                        let mut cache_labels = labels.clone();
+                        cache_labels.insert("node_id".to_string(), node_id.clone());
+                        cache_labels.insert("cache_result".to_string(), "hit".to_string());
+                        self.monitoring.record_metric("cache_requests", 1.0, cache_labels);
+
+                        context.trace.push(TraceEntry {
+                            node_id: node_id.clone(),
+                            cached: true,
+                            latency_ms: 0,
+                            tokens: 0,
+                            cost: 0.0,
+                        });
+
+                        self.monitoring.finish_span(&node_span_id, TraceStatus::Success);
+                        continue;
+                    } else {
+                        // Record cache miss
+                        let mut cache_labels = labels.clone();
+                        cache_labels.insert("node_id".to_string(), node_id.clone());
+                        cache_labels.insert("cache_result".to_string(), "miss".to_string());
+                        self.monitoring.record_metric("cache_requests", 1.0, cache_labels);
+                    }
+                }
+
+                // Execute node with monitoring
+                let node_start = std::time::Instant::now();
+                let result = self.execute_node_with_monitoring(node, &mut context, &node_span_id).await;
+                let node_duration = node_start.elapsed();
+
+                match result {
+                    Ok(result) => {
+                        // Record successful node execution
+                        let mut node_labels = labels.clone();
+                        node_labels.insert("node_id".to_string(), node_id.clone());
+                        node_labels.insert("status".to_string(), "success".to_string());
+                        self.monitoring.record_metric("node_executions", 1.0, node_labels.clone());
+                        self.monitoring.record_metric("node_duration_ms", node_duration.as_millis() as f64, node_labels);
+
+                        // Run guardrails with monitoring
+                        if let Err(e) = self.guardrails.check(&result).await {
+                            self.monitoring.add_span_log(
+                                &node_span_id,
+                                LogLevel::Error,
+                                "Guardrail violation",
+                                std::collections::HashMap::new()
+                            );
+                            self.monitoring.finish_span(&node_span_id, TraceStatus::Error(e.to_string()));
+                            return Err(PipelineError::GuardrailViolation(e.to_string()));
+                        }
+
+                        self.monitoring.finish_span(&node_span_id, TraceStatus::Success);
+                    }
+                    Err(e) => {
+                        // Record failed node execution
+                        let mut node_labels = labels.clone();
+                        node_labels.insert("node_id".to_string(), node_id.clone());
+                        node_labels.insert("status".to_string(), "error".to_string());
+                        self.monitoring.record_metric("node_executions", 1.0, node_labels);
+
+                        self.monitoring.add_span_log(
+                            &node_span_id,
+                            LogLevel::Error,
+                            "Node execution failed",
+                            std::collections::HashMap::new()
+                        );
+                        self.monitoring.finish_span(&node_span_id, TraceStatus::Error(format!("{:?}", e)));
+                        return Err(e);
+                    }
+                }
+
+                // Cache result if enabled
+                if pipeline.global_config.cache_enabled {
+                    self.cache_result(&node_id, &result).await;
                 }
             }
 
-            // Execute node
-            let result = self.execute_node(node, &mut context).await?;
+            Ok(PipelineOutput {
+                result: context.variables.get("output").cloned().unwrap_or_default(),
+                trace: context.trace,
+                total_cost: context.cost,
+                total_latency_ms: context.start_time.elapsed().as_millis() as u64,
+            })
+        }.await;
 
-            // Run guardrails
-            if let Err(e) = self.guardrails.check(&result).await {
-                return Err(PipelineError::GuardrailViolation(e.to_string()));
+        // Finish pipeline span with appropriate status
+        match &result {
+            Ok(_) => {
+                // Record successful pipeline execution
+                labels.insert("status".to_string(), "success".to_string());
+                self.monitoring.record_metric("pipeline_executions_completed", 1.0, labels.clone());
+                self.monitoring.record_metric("pipeline_cost_usd", context.cost, labels.clone());
+                self.monitoring.record_metric("pipeline_total_tokens", 
+                    context.trace.iter().map(|t| t.tokens as f64).sum(), labels);
+                self.monitoring.finish_span(&pipeline_span_id, TraceStatus::Success);
             }
-
-            // Update metrics
-            self.update_metrics(node, &result).await;
-
-            // Cache result if enabled
-            if pipeline.global_config.cache_enabled {
-                self.cache_result(&node_id, &result).await;
+            Err(e) => {
+                // Record failed pipeline execution
+                labels.insert("status".to_string(), "error".to_string());
+                self.monitoring.record_metric("pipeline_executions_completed", 1.0, labels);
+                self.monitoring.finish_span(&pipeline_span_id, TraceStatus::Error(format!("{:?}", e)));
             }
         }
 
-        Ok(PipelineOutput {
-            result: context.variables.get("output").cloned().unwrap_or_default(),
-            trace: context.trace,
-            total_cost: context.cost,
-            total_latency_ms: context.start_time.elapsed().as_millis() as u64,
-        })
+        result
+    }
+
+    async fn execute_node_with_monitoring(
+        &self,
+        node: &PipelineNode,
+        context: &mut ExecutionContext,
+        span_id: &str,
+    ) -> Result<NodeResult, PipelineError> {
+        let start = std::time::Instant::now();
+
+        let result = match &node.kind {
+            NodeKind::Model { provider, model, temperature, max_tokens } => {
+                self.monitoring.add_span_log(
+                    span_id,
+                    LogLevel::Info,
+                    "Executing model",
+                    [("provider".to_string(), provider.clone()), 
+                     ("model".to_string(), model.clone())].into_iter().collect()
+                );
+                self.execute_model(provider, model, *temperature, *max_tokens, context).await?
+            }
+            NodeKind::Prompt { template, variables } => {
+                self.monitoring.add_span_log(
+                    span_id,
+                    LogLevel::Info,
+                    "Processing prompt template",
+                    [("variables_count".to_string(), variables.len().to_string())].into_iter().collect()
+                );
+                self.execute_prompt(template, variables, context)?
+            }
+            NodeKind::Router { strategy, routes } => {
+                self.monitoring.add_span_log(
+                    span_id,
+                    LogLevel::Info,
+                    "Routing request",
+                    [("routes_count".to_string(), routes.len().to_string())].into_iter().collect()
+                );
+                self.execute_router(strategy, routes, context).await?
+            }
+            _ => {
+                self.monitoring.add_span_log(
+                    span_id,
+                    LogLevel::Warn,
+                    "Unknown node type",
+                    std::collections::HashMap::new()
+                );
+                NodeResult::default()
+            }
+        };
+
+        let latency_ms = start.elapsed().as_millis() as u64;
+        
+        // Log execution completion
+        let mut completion_fields = std::collections::HashMap::new();
+        completion_fields.insert("latency_ms".to_string(), latency_ms.to_string());
+        completion_fields.insert("tokens".to_string(), result.tokens.to_string());
+        completion_fields.insert("cost".to_string(), result.cost.to_string());
+        self.monitoring.add_span_log(
+            span_id,
+            LogLevel::Info,
+            "Node execution completed",
+            completion_fields
+        );
+        
+        context.trace.push(TraceEntry {
+            node_id: node.id.clone(),
+            cached: false,
+            latency_ms,
+            tokens: result.tokens,
+            cost: result.cost,
+        });
+
+        // Update node metrics
+        self.update_metrics(node, &result).await;
+
+        Ok(result)
     }
 
     async fn execute_node(

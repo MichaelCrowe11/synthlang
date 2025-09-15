@@ -1,0 +1,12 @@
+src/
+target/
+*.rs
+Cargo.toml
+Cargo.lock
+build.rs
+test_compiler.rs
+.github/
+.git/
+*.md
+!README.md
+!docs/USER_GUIDE.md
