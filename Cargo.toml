@@ -1,13 +1,13 @@
 [package]
-name = "synth-lang"
-version = "0.1.0"
+name = "synthlang"
+version = "1.0.0"
 edition = "2021"
-authors = ["SYNTH Language Team <team@synthlang.org>"]
+authors = ["Michael Benjamin Crowe <michael@crowelogic.com>"]
 license = "Apache-2.0"
-description = "SYNTH: The Universal Synthesis Language - AI-native, cross-domain programming"
-homepage = "https://synthlang.org"
-repository = "https://github.com/synth-lang/synth"
-documentation = "https://docs.synthlang.org"
+description = "The Generative AI Pipeline DSL - Compose, evaluate, and deploy LLM pipelines with confidence"
+homepage = "https://synthlang.ai"
+repository = "https://github.com/MichaelCrowe11/synthlang"
+documentation = "https://docs.synthlang.ai"
 keywords = ["programming-language", "compiler", "ai", "quantum", "cross-domain"]
 categories = ["compilers", "development-tools", "science"]
 
