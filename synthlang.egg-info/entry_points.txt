@@ -1,3 +1,0 @@
-[console_scripts]
-synth = synthlang.cli:main
-synthlang = synthlang.cli:main

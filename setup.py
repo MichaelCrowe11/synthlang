@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Setup script for SynthLang - The Generative AI Pipeline DSL"""
+"""Setup script for PolyThLang - The Polyglot AI Programming Language"""
 
 from setuptools import setup, find_packages
 import os
@@ -9,14 +9,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 # Read version from package
-version = "1.0.0"
+version = "1.0.1"
 
 setup(
     name="polythlang-mbc",
     version=version,
     author="Michael Benjamin Crowe",
     author_email="michael@crowelogic.com",
-    description="The Generative AI Pipeline DSL - Compose, evaluate, and deploy LLM pipelines with confidence",
+    description="The Polyglot AI Programming Language - Multi-paradigm language with AI engine, quantum computing, and semantic analysis",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/MichaelCrowe11/polythlang",
@@ -65,7 +65,7 @@ setup(
     entry_points={
         "console_scripts": [
             "polythlang=polythlang.cli:main",
-            "synth=polythlang.cli:main",
+            "polyth=polythlang.cli:main",
         ],
     },
     include_package_data=True,
@@ -77,9 +77,9 @@ setup(
         ],
     },
     zip_safe=False,
-    keywords="llm ai pipeline dsl generative-ai orchestration langchain prompt-engineering",
+    keywords="programming-language polyglot ai quantum compiler multi-paradigm python javascript rust",
     project_urls={
-        "Documentation": "https://polythlang.ai/docs",
+        "Documentation": "https://github.com/MichaelCrowe11/polythlang",
         "Bug Reports": "https://github.com/MichaelCrowe11/polythlang/issues",
         "Source": "https://github.com/MichaelCrowe11/polythlang",
         "Discord": "https://discord.gg/polythlang",
