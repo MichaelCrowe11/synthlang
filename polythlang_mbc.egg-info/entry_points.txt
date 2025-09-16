@@ -1,0 +1,3 @@
+[console_scripts]
+polythlang = polythlang.cli:main
+synth = polythlang.cli:main

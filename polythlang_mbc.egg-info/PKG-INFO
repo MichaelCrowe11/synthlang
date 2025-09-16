@@ -1,0 +1,346 @@
+Metadata-Version: 2.4
+Name: polythlang-mbc
+Version: 1.0.0
+Summary: The Generative AI Pipeline DSL - Compose, evaluate, and deploy LLM pipelines with confidence
+Home-page: https://github.com/MichaelCrowe11/polythlang
+Author: Michael Benjamin Crowe
+Author-email: Michael Benjamin Crowe <michael@crowelogic.com>
+License: Apache-2.0
+Project-URL: Homepage, https://github.com/MichaelCrowe11/polythlang
+Project-URL: Documentation, https://polythlang.ai/docs
+Project-URL: Repository, https://github.com/MichaelCrowe11/polythlang
+Project-URL: Issues, https://github.com/MichaelCrowe11/polythlang/issues
+Keywords: llm,ai,pipeline,dsl,generative-ai,orchestration,langchain,prompt-engineering
+Classifier: Development Status :: 4 - Beta
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Programming Language :: Python :: 3.12
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: click>=8.0
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: requests>=2.28
+Requires-Dist: rich>=13.0
+Requires-Dist: aiohttp>=3.8
+Requires-Dist: pydantic>=2.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.21; extra == "dev"
+Requires-Dist: black>=23.0; extra == "dev"
+Requires-Dist: mypy>=1.0; extra == "dev"
+Requires-Dist: ruff>=0.1.0; extra == "dev"
+Provides-Extra: ide
+Requires-Dist: flask>=2.3; extra == "ide"
+Requires-Dist: flask-cors>=4.0; extra == "ide"
+Requires-Dist: websockets>=11.0; extra == "ide"
+Provides-Extra: monitoring
+Requires-Dist: prometheus-client>=0.16; extra == "monitoring"
+Requires-Dist: grafana-api>=1.0; extra == "monitoring"
+Dynamic: author
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-python
+
+# SynthLang 🚀
+
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![VS Code Extension](https://img.shields.io/badge/VS%20Code-Extension-007ACC?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=synthlang.synthlang)
+[![GitHub Stars](https://img.shields.io/github/stars/synth-lang/synth?style=social)](https://github.com/synth-lang/synth)
+[![Discord](https://img.shields.io/discord/123456789?color=7289da&logo=discord&logoColor=white)](https://discord.gg/synthlang)
+
+**The Generative AI Pipeline DSL** - Compose, evaluate, and deploy LLM pipelines with confidence.
+
+```synth
+pipeline CustomerSupport {
+    // Multi-model routing with A/B testing
+    router intent_classifier {
+        strategy: ab_split(0.5)
+        routes: [
+            {name: "gpt4", target: gpt4_model},
+            {name: "claude", target: claude_model}
+        ]
+    }
+    
+    // Built-in safety & compliance
+    guardrail safety {
+        toxicity_threshold: 0.1
+        pii_detection: true
+        bias_check: ["gender", "race"]
+    }
+    
+    // Smart caching & evaluation
+    cache responses {
+        ttl: 3600
+        strategy: semantic_similarity(0.95)
+    }
+}
+```
+
+## 🎯 Why SynthLang?
+
+- **🔄 Multi-Model Orchestration**: Route between models, A/B test, and optimize costs automatically
+- **🛡️ Built-in Safety**: Toxicity detection, bias testing, and PII protection out of the box
+- **📊 Comprehensive Evaluation**: Dataset versioning, statistical testing, and performance metrics
+- **⚡ Production Ready**: Caching, rate limiting, and monitoring built into the language
+- **🎨 Developer Experience**: VS Code extension with IntelliSense, debugging, and live metrics
+
+## 🚀 Quick Start
+
+### Install the VS Code Extension (Free)
+
+1. Open VS Code
+2. Search for "SynthLang" in Extensions
+3. Click Install
+
+### Install the CLI
+
+```bash
+# NPM
+npm install -g synthlang
+
+# Or using Cargo
+cargo install synthlang
+
+# Or download binary
+curl -sSL https://get.synthlang.ai | sh
+```
+
+### Your First Pipeline
+
+Create `hello.synth`:
+
+```synth
+pipeline HelloWorld {
+    prompt greeting {
+        template: """
+        Generate a friendly greeting for {{name}}.
+        Make it warm and welcoming!
+        """
+    }
+    
+    model gpt {
+        provider: "openai"
+        model: "gpt-3.5-turbo"
+        temperature: 0.7
+    }
+    
+    edges: [
+        input -> greeting -> gpt -> output
+    ]
+}
+
+// Run with: synth run hello.synth --input '{"name": "Alice"}'
+```
+
+## 📦 Features
+
+### Free Tier
+- ✅ VS Code Extension with syntax highlighting
+- ✅ Local pipeline execution
+- ✅ Basic evaluation metrics
+- ✅ Community support
+
+### Pro Tier ($49/mo)
+- ✅ Everything in Free
+- ✅ Advanced caching strategies
+- ✅ A/B testing & routing
+- ✅ Bias & toxicity detection
+- ✅ Dataset versioning
+- ✅ Priority support
+
+### Team Tier ($199/mo)
+- ✅ Everything in Pro
+- ✅ Team collaboration
+- ✅ Audit trails
+- ✅ Custom guardrails
+- ✅ SLA guarantees
+- ✅ Dedicated support
+
+### Enterprise (Custom)
+- ✅ Everything in Team
+- ✅ On-premise deployment
+- ✅ Custom integrations
+- ✅ Compliance reporting
+- ✅ 24/7 support
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────┐
+│           SynthLang Pipeline            │
+├─────────────────────────────────────────┤
+│  DSL Parser → Graph Builder → Executor  │
+├─────────────────────────────────────────┤
+│  Safety Layer (Toxicity, Bias, PII)     │
+├─────────────────────────────────────────┤
+│  Caching & Optimization Layer           │
+├─────────────────────────────────────────┤
+│  Model Providers (OpenAI, Anthropic...) │
+└─────────────────────────────────────────┘
+```
+
+## 📊 Evaluation & Testing
+
+```synth
+eval CustomerSupportQuality {
+    dataset: "support_test_v1"  // Versioned dataset
+    
+    metrics: {
+        accuracy: true,
+        toxicity: true,
+        bias: true,
+        latency_p95: 2000  // ms
+    }
+    
+    comparison: {
+        baseline: "gpt-3.5",
+        candidates: ["CustomerSupport"],
+        significance: 0.95
+    }
+}
+```
+
+## 🛡️ Safety First
+
+Every pipeline automatically includes:
+
+- **Toxicity Detection**: Perspective API integration
+- **Bias Testing**: Multi-dimensional bias detection
+- **PII Protection**: Automatic redaction
+- **Adversarial Testing**: Jailbreak prevention
+- **Audit Logging**: Complete traceability
+
+## 🔧 Advanced Features
+
+### Multi-Stage Pipelines
+```synth
+pipeline MultiStage {
+    // Stage 1: Classification
+    model classifier { ... }
+    
+    // Stage 2: Specialized routing
+    router by_intent {
+        strategy: conditional
+        routes: [
+            {condition: "intent == 'technical'", target: tech_expert},
+            {condition: "intent == 'billing'", target: billing_expert}
+        ]
+    }
+}
+```
+
+### Dataset Versioning
+```synth
+dataset CustomerQueries {
+    version: "2.1.0"
+    parent: "CustomerQueries@2.0.0"
+    
+    transformations: [
+        {type: "filter", condition: "quality_score > 0.8"},
+        {type: "augment", method: "paraphrase"}
+    ]
+}
+```
+
+### A/B Testing
+```synth
+router experiment {
+    strategy: ab_split(0.5)
+    
+    metrics: [
+        "response_quality",
+        "latency",
+        "cost"
+    ]
+    
+    auto_optimize: true  // Automatically shift traffic
+}
+```
+
+## 📈 Metrics & Monitoring
+
+Real-time metrics dashboard in VS Code:
+- Request volume & latency
+- Cost tracking
+- Cache hit rates
+- Error rates
+- A/B test results
+
+## 🤝 Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+```bash
+# Clone the repo
+git clone https://github.com/synth-lang/synth
+cd synth
+
+# Install dependencies
+cargo build --release
+
+# Run tests
+cargo test
+
+# Run examples
+synth run examples/
+```
+
+## 📚 Documentation
+
+- [Language Guide](https://docs.synthlang.ai/guide)
+- [API Reference](https://docs.synthlang.ai/api)
+- [Examples](./examples/)
+- [Blog](https://synthlang.ai/blog)
+
+## 🗺️ Roadmap
+
+### Phase 0 (Current) - Free Extension
+- ✅ VS Code extension
+- ✅ Basic pipeline runner
+- ✅ Evaluation harness
+
+### Phase 1 (Q1 2024) - Pro Launch
+- 🔄 Cloud execution
+- 🔄 Advanced caching
+- 🔄 Team features
+
+### Phase 2 (Q2 2024) - Enterprise
+- 📋 Fine-tuning management
+- 📋 Compliance suite
+- 📋 Custom deployments
+
+### Phase 3 (Q3 2024) - Platform
+- 📋 Model marketplace
+- 📋 Component library
+- 📋 Community hub
+
+## 💬 Community
+
+- [Discord](https://discord.gg/synthlang) - Join our community
+- [Twitter](https://twitter.com/synthlang) - Follow for updates
+- [GitHub Discussions](https://github.com/synth-lang/synth/discussions) - Ask questions
+
+## 📄 License
+
+Licensed under Apache 2.0. See [LICENSE](LICENSE) for details.
+
+## 🙏 Acknowledgments
+
+Built with ❤️ by the SynthLang team.
+
+Special thanks to our contributors and early adopters!
+
+---
+
+**Ready to build safer, more reliable AI pipelines?**
+
+[Get Started →](https://synthlang.ai/docs/quickstart) | [View Examples →](./examples/) | [Join Discord →](https://discord.gg/synthlang)
