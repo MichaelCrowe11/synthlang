@@ -1,10 +1,10 @@
 {
-  "name": "synthlang",
+  "name": "@michaelcrowe11/polythlang",
   "version": "1.0.0",
   "description": "The Generative AI Pipeline DSL - Compose, evaluate, and deploy LLM pipelines with confidence",
   "main": "dist/index.js",
   "bin": {
-    "synth": "./bin/synth.js"
+    "synth": "bin/synth.js"
   },
   "directories": {
     "doc": "docs",
@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/MichaelCrowe11/synthlang.git"
+    "url": "git+https://github.com/MichaelCrowe11/polythlang.git"
   },
   "keywords": [
     "llm",
@@ -34,9 +34,9 @@
   "author": "Michael Crowe",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/MichaelCrowe11/synthlang/issues"
+    "url": "https://github.com/MichaelCrowe11/polythlang/issues"
   },
-  "homepage": "https://github.com/MichaelCrowe11/synthlang#readme",
+  "homepage": "https://github.com/MichaelCrowe11/polythlang#readme",
   "engines": {
     "node": ">=16.0.0"
   }

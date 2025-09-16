@@ -12,14 +12,14 @@ with open("README.md", "r", encoding="utf-8") as fh:
 version = "1.0.0"
 
 setup(
-    name="synthlang",
+    name="polythlang-mbc",
     version=version,
     author="Michael Benjamin Crowe",
     author_email="michael@crowelogic.com",
     description="The Generative AI Pipeline DSL - Compose, evaluate, and deploy LLM pipelines with confidence",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/MichaelCrowe11/synthlang",
+    url="https://github.com/MichaelCrowe11/polythlang",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -64,13 +64,13 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "synthlang=synthlang.cli:main",
-            "synth=synthlang.cli:main",
+            "polythlang=polythlang.cli:main",
+            "synth=polythlang.cli:main",
         ],
     },
     include_package_data=True,
     package_data={
-        "synthlang": [
+        "polythlang": [
             "templates/*.synth",
             "static/*",
             "examples/*.synth",
@@ -79,9 +79,9 @@ setup(
     zip_safe=False,
     keywords="llm ai pipeline dsl generative-ai orchestration langchain prompt-engineering",
     project_urls={
-        "Documentation": "https://synthlang.ai/docs",
-        "Bug Reports": "https://github.com/MichaelCrowe11/synthlang/issues",
-        "Source": "https://github.com/MichaelCrowe11/synthlang",
-        "Discord": "https://discord.gg/synthlang",
+        "Documentation": "https://polythlang.ai/docs",
+        "Bug Reports": "https://github.com/MichaelCrowe11/polythlang/issues",
+        "Source": "https://github.com/MichaelCrowe11/polythlang",
+        "Discord": "https://discord.gg/polythlang",
     },
 )
