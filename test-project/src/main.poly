@@ -1,0 +1,6 @@
+// Main PolyThLang program
+
+function main() {
+    print("Hello from PolyThLang!");
+    return 0;
+}

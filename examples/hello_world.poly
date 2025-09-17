@@ -1,0 +1,14 @@
+// Simple PolyThLang program
+
+function main() {
+    let message = "Hello from PolyThLang!";
+    print(message);
+
+    let x = 10;
+    let y = 20;
+    let sum = x + y;
+
+    print("The sum is: " + sum);
+
+    return 0;
+}
